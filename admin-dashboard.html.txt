@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghana Help - Admin Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #1D9E75, #0F6E56); }
+        .login-box { background: white; padding: 40px; border-radius: 10px; text-align: center; width: 300px; }
+        .login-box input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        .login-box button { background: #1D9E75; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
+        .dashboard { display: none; }
+        .header { background: white; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .stats { display: flex; gap: 20px; }
+        .stat { background: #f8f9fa; padding: 10px 20px; border-radius: 5px; text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #1D9E75; }
+        .filters { background: white; padding: 20px; margin: 20px; border-radius: 5px; display: flex; gap: 10px; flex-wrap: wrap; }
+        .filters input, .filters select { padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .export-btn { background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .logout-btn { background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .orders-container { background: white; margin: 20px; border-radius: 5px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; }
+        .status-new { background: #fff3cd; color: #856404; padding: 4px 8px; border-radius: 20px; font-size: 12px; }
+        .status-completed { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 20px; font-size: 12px; }
+        button.small { padding: 5px 10px; margin: 2px; border: none; border-radius: 3px; cursor: pointer; }
+        .complete-btn { background: #28a745; color: white; }
+        .delete-btn { background: #dc3545; color: white; }
+        .view-btn { background: #17a2b8; color: white; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 20px; border-radius: 10px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        @media (max-width: 768px) { th, td { font-size: 12px; padding: 8px; } .stats { flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div class="login-container" id="loginScreen"><div class="login-box"><h2>🇬🇭 Ghana Help</h2><p>Admin Login</p><input type="password" id="password" placeholder="Enter password" onkeypress="if(event.key==='Enter') login()"><button onclick="login()">Login</button><div id="error" style="color:red; margin-top:10px; display:none;">Wrong password</div><p style="margin-top:20px; font-size:12px;">Default: admin123</p></div></div>
+    <div class="dashboard" id="dashboard"><div class="header"><h2>🇬🇭 Ghana Help - Orders Dashboard</h2><div class="stats"><div class="stat"><div class="stat-number" id="totalOrders">0</div><div>Total</div></div><div class="stat"><div class="stat-number" id="newOrders">0</div><div>New</div></div><div class="stat"><div class="stat-number" id="completedOrders">0</div><div>Completed</div></div></div><button class="logout-btn" onclick="logout()">Logout</button></div>
+        <div class="filters"><input type="text" id="search" placeholder="Search name, phone, location..." onkeyup="renderOrders()"><select id="statusFilter" onchange="renderOrders()"><option value="all">All Status</option><option value="New">New</option><option value="Completed">Completed</option></select><button class="export-btn" onclick="exportCSV()">📥 Export to Excel</button></div>
+        <div class="orders-container"><div id="ordersTable">Loading...</div></div>
+    </div>
+    <div class="modal" id="modal"><div class="modal-content"><h3>Order Details</h3><div id="modalBody"></div><button onclick="closeModal()" style="margin-top:15px; padding:10px; width:100%;">Close</button></div></div>
+    <script>
+        const PASSWORD = "admin123";
+        let orders = [];
+        function login() { if(document.getElementById('password').value === PASSWORD) { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('dashboard').style.display = 'block'; loadOrders(); setInterval(loadOrders, 30000); } else { document.getElementById('error').style.display = 'block'; } }
+        function logout() { document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('dashboard').style.display = 'none'; document.getElementById('password').value = ''; }
+        function loadOrders() { const stored = localStorage.getItem('ghanahelp_orders'); if(stored) orders = JSON.parse(stored); else orders = []; renderOrders(); updateStats(); }
+        function updateStats() { document.getElementById('totalOrders').innerText = orders.length; document.getElementById('newOrders').innerText = orders.filter(o=>o.status==='New').length; document.getElementById('completedOrders').innerText = orders.filter(o=>o.status==='Completed').length; }
+        function renderOrders() { const search = document.getElementById('search').value.toLowerCase(); const statusFilter = document.getElementById('statusFilter').value; let filtered = orders.filter(o => (o.name.toLowerCase().includes(search) || o.phone.includes(search) || o.location.toLowerCase().includes(search)) && (statusFilter === 'all' || o.status === statusFilter)); if(filtered.length === 0) { document.getElementById('ordersTable').innerHTML = '<div style="padding:40px; text-align:center;">📭 No orders found</div>'; return; }
+            let html = '<table><thead><tr><th>ID</th><th>Date</th><th>Name</th><th>Phone</th><th>Location</th><th>Services</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+            filtered.forEach(o => { html += `<tr><td>#${o.id}</td><td>${o.timestamp}</td><td><strong>${o.name}</strong></td><td>${o.phone}</td><td>${o.location}</td><td>${o.services}</td><td><span class="status-${o.status === 'New' ? 'new' : 'completed'}">${o.status}</span></td>
+                <td><button class="view-btn small" onclick="viewOrder(${o.id})">👁️ View</button>${o.status !== 'Completed' ? `<button class="complete-btn small" onclick="markComplete(${o.id})">✅ Complete</button>` : ''}<button class="delete-btn small" onclick="deleteOrder(${o.id})">🗑️ Delete</button></td></tr>`; });
+            html += '</tbody></table>'; document.getElementById('ordersTable').innerHTML = html;
+        }
+        function viewOrder(id) { const o = orders.find(x=>x.id===id); if(!o) return; document.getElementById('modalBody').innerHTML = `<p><strong>Order ID:</strong> #${o.id}</p><p><strong>Date:</strong> ${o.timestamp}</p><p><strong>Name:</strong> ${o.name}</p><p><strong>Phone:</strong> ${o.phone}</p><p><strong>Email:</strong> ${o.email || 'N/A'}</p><p><strong>Location:</strong> ${o.location}</p><p><strong>Services:</strong> ${o.services}</p><p><strong>Urgency:</strong> ${o.urgency || 'N/A'}</p><p><strong>Budget:</strong> ${o.budget || 'N/A'}</p><p><strong>Description:</strong> ${o.description}</p><p><strong>Status:</strong> ${o.status}</p>`; document.getElementById('modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('modal').style.display = 'none'; }
+        function markComplete(id) { const o = orders.find(x=>x.id===id); if(o && confirm(`Mark order #${id} as completed?`)) { o.status = 'Completed'; localStorage.setItem('ghanahelp_orders', JSON.stringify(orders)); renderOrders(); updateStats(); } }
+        function deleteOrder(id) { if(confirm('Delete this order?')) { orders = orders.filter(x=>x.id!==id); localStorage.setItem('ghanahelp_orders', JSON.stringify(orders)); renderOrders(); updateStats(); } }
+        function exportCSV() { let csv = "Order ID,Date,Name,Phone,Email,Location,Services,Urgency,Budget,Description,Status\n"; orders.forEach(o => { csv += `"${o.id}","${o.timestamp}","${o.name}","${o.phone}","${o.email || ''}","${o.location}","${o.services}","${o.urgency || ''}","${o.budget || ''}","${o.description.replace(/"/g, '""')}","${o.status}"\n`; }); const blob = new Blob([csv], {type: 'text/csv'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `ghanahelp_orders_${new Date().toISOString().split('T')[0]}.csv`; a.click(); }
+    </script>
+</body>
+</html>

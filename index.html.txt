@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghana Help – Book Local Services</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f7f6f2; }
+        nav { background: white; padding: 15px 20px; text-align: center; border-bottom: 1px solid #ddd; }
+        .logo { font-size: 24px; font-weight: bold; color: #1D9E75; }
+        .hero { text-align: center; padding: 50px 20px; background: linear-gradient(135deg, #1D9E75, #0F6E56); color: white; }
+        .hero h1 { font-size: 48px; margin-bottom: 20px; }
+        .hero p { font-size: 20px; }
+        .services { max-width: 1000px; margin: 50px auto; padding: 0 20px; }
+        .services h2 { text-align: center; margin-bottom: 30px; color: #1D9E75; }
+        .service-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .service-card { background: white; padding: 30px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s; border: 2px solid transparent; }
+        .service-card.selected { border-color: #1D9E75; background: #E1F5EE; }
+        .service-card:hover { transform: translateY(-5px); box-shadow: 0 5px 20px rgba(0,0,0,0.1); }
+        .service-card .icon { font-size: 48px; margin-bottom: 15px; }
+        .service-card h3 { margin-bottom: 10px; }
+        .check-badge { display: inline-block; background: #1D9E75; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; margin-top: 10px; }
+        .form-container { max-width: 600px; margin: 50px auto; padding: 30px; background: white; border-radius: 10px; display: none; }
+        .form-container.visible { display: block; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #1D9E75; color: white; padding: 15px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background: #0F6E56; }
+        .success { text-align: center; padding: 50px; background: white; border-radius: 10px; margin: 50px auto; max-width: 500px; display: none; }
+        .success.visible { display: block; }
+        footer { text-align: center; padding: 30px; background: #333; color: white; margin-top: 50px; }
+        @media (max-width: 768px) { .hero h1 { font-size: 32px; } }
+    </style>
+</head>
+<body>
+    <nav><div class="logo">🇬🇭 Ghana Help</div></nav>
+    <div class="hero"><h1>Get Expert Help Across Ghana</h1><p>Trusted professionals • Fast response • Fair prices</p></div>
+    <div class="services"><h2>What do you need help with?</h2><div class="service-grid" id="serviceGrid"></div></div>
+    <div class="form-container" id="formContainer"><h2>Tell us more</h2><div id="selectedTags"></div>
+        <input type="text" id="name" placeholder="Full name *"><input type="tel" id="phone" placeholder="Phone number *">
+        <input type="email" id="email" placeholder="Email"><input type="text" id="location" placeholder="City/Area in Ghana *">
+        <select id="urgency"><option value="">Urgency</option><option>Emergency - same day</option><option>Soon - within 2 days</option><option>This week</option><option>Flexible</option></select>
+        <select id="budget"><option value="">Budget (GHS)</option><option>Under 200</option><option>200-500</option><option>500-1000</option><option>1000+</option></select>
+        <textarea id="description" rows="4" placeholder="Describe the work needed *"></textarea>
+        <button onclick="submitOrder()">Submit Request →</button>
+    </div>
+    <div class="success" id="success"><h2>✅ Request Sent!</h2><p id="successMsg"></p><button onclick="resetForm()">Submit Another Request</button></div>
+    <footer><p>🇬🇭 Ghana Help — Connecting you with trusted local professionals</p><p>📞 +233 50 907 7668 | 📧 info@ghanahelp.com</p></footer>
+    <script>
+        const services = ['Electrical', 'Plumbing', 'Cleaning', 'Renovation', 'IT Help', 'Telecoms'];
+        const icons = ['⚡', '🔧', '🧹', '🔨', '💻', '📡'];
+        let selected = [];
+        function renderServices() { const grid = document.getElementById('serviceGrid'); grid.innerHTML = ''; services.forEach((s, i) => { const card = document.createElement('div'); card.className = 'service-card'; card.onclick = () => toggleService(s, card); card.innerHTML = `<div class="icon">${icons[i]}</div><h3>${s}</h3><div class="check-badge" id="check-${s}">✓ Selected</div>`; document.getElementById(`check-${s}`).style.display = 'none'; grid.appendChild(card); }); }
+        function toggleService(s, card) { if (selected.includes(s)) { selected = selected.filter(x => x !== s); card.classList.remove('selected'); document.getElementById(`check-${s}`).style.display = 'none'; } else { selected.push(s); card.classList.add('selected'); document.getElementById(`check-${s}`).style.display = 'inline-block'; } updateForm(); }
+        function updateForm() { const form = document.getElementById('formContainer'); const tags = document.getElementById('selectedTags'); form.classList.toggle('visible', selected.length > 0); tags.innerHTML = selected.map(s => `<span style="background:#E1F5EE; padding:5px 12px; border-radius:20px; margin:5px; display:inline-block;">✓ ${s}</span>`).join(''); if(selected.length > 0) setTimeout(() => form.scrollIntoView({behavior:'smooth'}), 100); }
+        function submitOrder() { const name = document.getElementById('name').value.trim(); const phone = document.getElementById('phone').value.trim(); const location = document.getElementById('location').value.trim(); const desc = document.getElementById('description').value.trim(); if(!name || !phone || !location || !desc) { alert('Please fill all required fields'); return; } if(selected.length === 0) { alert('Please select a service'); return; }
+            const order = { id: Date.now(), timestamp: new Date().toLocaleString(), name, phone, email: document.getElementById('email').value, location, services: selected.join(', '), urgency: document.getElementById('urgency').value, budget: document.getElementById('budget').value, description: desc, status: 'New' };
+            let orders = JSON.parse(localStorage.getItem('ghanahelp_orders') || '[]'); orders.unshift(order); localStorage.setItem('ghanahelp_orders', JSON.stringify(orders));
+            document.getElementById('successMsg').innerHTML = `Thanks ${name}! We'll contact you at ${phone} shortly.`; document.querySelector('.hero').style.display = 'none'; document.querySelector('.services').style.display = 'none'; document.getElementById('formContainer').classList.remove('visible'); document.getElementById('success').classList.add('visible'); window.scrollTo(0,0);
+        }
+        function resetForm() { selected = []; document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected')); document.querySelectorAll('.check-badge').forEach(b => b.style.display = 'none'); document.getElementById('name').value = ''; document.getElementById('phone').value = ''; document.getElementById('email').value = ''; document.getElementById('location').value = ''; document.getElementById('description').value = ''; document.getElementById('urgency').selectedIndex = 0; document.getElementById('budget').selectedIndex = 0; document.querySelector('.hero').style.display = ''; document.querySelector('.services').style.display = ''; document.getElementById('success').classList.remove('visible'); updateForm(); window.scrollTo(0,0); }
+        renderServices();
+    </script>
+</body>
+</html>
